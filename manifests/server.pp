@@ -83,6 +83,8 @@ class postfix::server (
   $sender_canonical_maps = false,
   $relocated_maps = false,
   $extra_main_parameters = {},
+  $default_destination_rate_delay = 0,
+  $default_destination_concurrency_limit = 20,
   # master.cf
   $smtp_content_filter = [],
   $smtps_content_filter = $smtp_content_filter,
