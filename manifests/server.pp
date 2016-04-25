@@ -36,6 +36,7 @@ class postfix::server (
   $mailbox_command = false,
   $smtpd_banner = '$myhostname ESMTP $mail_name',
   $setgid_group = $::postfix::params::setgid_group,
+  $mailbox_size_limit = undef,
   $message_size_limit = false,
   $mail_name = false,
   $virtual_alias_domains = false,
@@ -81,13 +82,14 @@ class postfix::server (
   $smtp_use_tls = false,
   $canonical_maps = false,
   $sender_canonical_maps = false,
+  $smtp_generic_maps = false,
   $relocated_maps = false,
   $extra_main_parameters = {},
   $default_destination_rate_delay = 0,
   $default_destination_concurrency_limit = 20,
   # master.cf
   $smtp_content_filter = [],
-  $smtps_content_filter = $smtp_content_filter,
+  $smtps_content_filter = [],
   $submission = false,
   # EL5
   $submission_smtpd_enforce_tls = 'yes',
@@ -136,29 +138,32 @@ class postfix::server (
   $postgrey_policy_service = undef,
   $clamav                  = false,
   # Parameters
-  $command_directory     = $::postfix::params::command_directory,
-  $config_directory      = $::postfix::params::config_directory,
-  $daemon_directory      = $::postfix::params::daemon_directory,
-  $data_directory        = $::postfix::params::data_directory,
-  $manpage_directory     = $::postfix::params::manpage_directory,
-  $readme_directory      = $::postfix::params::readme_directory,
-  $sample_directory      = $::postfix::params::sample_directory,
-  $postfix_package       = $::postfix::params::postfix_package,
-  $postfix_mysql_package = $::postfix::params::postfix_mysql_package,
-  $postgrey_package      = $::postfix::params::postgrey_package,
-  $service_restart       = $::postfix::params::service_restart,
-  $spamassassin_package  = $::postfix::params::spamassassin_package,
-  $spampd_package        = $::postfix::params::spampd_package,
-  $spampd_config         = $::postfix::params::spampd_config,
-  $spampd_template       = $::postfix::params::spampd_template,
-  $root_group            = $::postfix::params::root_group,
-  $mailq_path            = $::postfix::params::mailq_path,
-  $newaliases_path       = $::postfix::params::newaliases_path,
-  $sendmail_path         = $::postfix::params::sendmail_path
+  $postfix_version        = $::postfix::params::postfix_version,
+  $command_directory      = $::postfix::params::command_directory,
+  $config_directory       = $::postfix::params::config_directory,
+  $daemon_directory       = $::postfix::params::daemon_directory,
+  $data_directory         = $::postfix::params::data_directory,
+  $manpage_directory      = $::postfix::params::manpage_directory,
+  $readme_directory       = $::postfix::params::readme_directory,
+  $sample_directory       = $::postfix::params::sample_directory,
+  $postfix_package        = $::postfix::params::postfix_package,
+  $postfix_mysql_package  = $::postfix::params::postfix_mysql_package,
+  $postfix_package_ensure = $::postfix::params::postfix_package_ensure,
+  $postgrey_package       = $::postfix::params::postgrey_package,
+  $service_restart        = $::postfix::params::service_restart,
+  $spamassassin_package   = $::postfix::params::spamassassin_package,
+  $spampd_package         = $::postfix::params::spampd_package,
+  $spampd_config          = $::postfix::params::spampd_config,
+  $spampd_template        = $::postfix::params::spampd_template,
+  $root_group             = $::postfix::params::root_group,
+  $mailq_path             = $::postfix::params::mailq_path,
+  $newaliases_path        = $::postfix::params::newaliases_path,
+  $sendmail_path          = $::postfix::params::sendmail_path
 ) inherits ::postfix::params {
 
   # Default has el5 files, for el6 a few defaults have changed
-  if ( $::operatingsystem =~ /RedHat|CentOS/ and $::operatingsystemrelease < 6 ) {
+  # FIXME : el6 template works for el7, but a new one would be prettier
+  if ( $::operatingsystem =~ /RedHat|CentOS/ and versioncmp($::operatingsystemrelease, '6') < 0 ) {
     $filesuffix = '-el5'
   } else {
     $filesuffix = ''
@@ -170,7 +175,7 @@ class postfix::server (
   } else {
     $package_name = $postfix_package
   }
-  package { $package_name: ensure => installed, alias => 'postfix' }
+  package { $package_name: ensure => $postfix_package_ensure, alias => 'postfix' }
 
   service { 'postfix':
     require   => Package[$package_name],
